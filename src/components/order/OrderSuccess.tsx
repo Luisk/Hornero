@@ -30,6 +30,11 @@ export function OrderSuccess({ order }: OrderSuccessProps) {
         El equipo Hornero se pondrá en contacto contigo para confirmar los
         detalles y coordinar el pago.
       </p>
+      {order.referenceImage ? (
+        <p className="text-sm leading-relaxed text-chocolate/70">
+          Recuerda enviar tu imagen de referencia por el chat de WhatsApp.
+        </p>
+      ) : null}
       <p className="text-xs tracking-[0.14em] text-olive uppercase">
         Pedido {order.id}
       </p>

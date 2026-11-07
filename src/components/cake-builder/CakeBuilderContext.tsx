@@ -17,9 +17,11 @@ import {
   type BuilderStepId,
 } from "@/config/builder-steps";
 import { getCakeVisual, type CakeVisual } from "@/lib/cake-visuals";
+import { openHorneroWhatsApp } from "@/lib/communications";
 import { createCakeOrder } from "@/lib/orders";
 import { calculateCakePrice } from "@/lib/pricing";
 import {
+  DEFAULT_CAKE_FILLING,
   EMPTY_CAKE_CONFIGURATION,
   MAX_CAKE_TOPPINGS,
   isCompleteCakeConfiguration,
@@ -41,6 +43,10 @@ type CakeBuilderContextValue = {
   builderStepNumber: number | null;
   builderStepCount: number;
   canContinue: boolean;
+  /** True after a blocked "Continuar" on the current step, until it's valid. */
+  showSelectionHint: boolean;
+  /** Increments on every blocked attempt (replays the hint animation). */
+  selectionHintAttempt: number;
   isOrderFormOpen: boolean;
   submittedOrder: CakeOrder | null;
   setSize: (size: CakeSizeId) => void;
@@ -50,11 +56,11 @@ type CakeBuilderContextValue = {
   toggleTopping: (topping: CakeToppingId) => void;
   goNext: () => void;
   goBack: () => void;
-  openOrderForm: () => void;
+  /** Leaves the intro for Step 1. Safe to call more than once. */
+  completeIntro: () => void;
   closeOrderForm: () => void;
-  submitOrder: (
-    input: Omit<CreateCakeOrderInput, "cake">,
-  ) => CakeOrder | null;
+  /** Creates the order and hands it to WhatsApp. True only once delivered. */
+  submitOrder: (input: Omit<CreateCakeOrderInput, "cake">) => boolean;
   resetBuilder: () => void;
 };
 
@@ -65,16 +71,15 @@ function canContinueFromStep(
   configuration: CakeConfiguration,
 ) {
   switch (stepId) {
+    // Filling defaults to "Sin relleno" and toppings are optional.
     case "intro":
+    case "filling":
     case "toppings":
-    case "preview":
       return true;
     case "size":
       return configuration.size !== null;
     case "sponge":
       return configuration.sponge !== null;
-    case "filling":
-      return configuration.filling !== null;
     case "coverage":
       return configuration.coverage !== null;
   }
@@ -85,6 +90,9 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
     EMPTY_CAKE_CONFIGURATION,
   );
   const [currentStepId, setCurrentStepId] = useState<BuilderStepId>("intro");
+  // Step where the customer tried to continue without a required choice.
+  const [hintStepId, setHintStepId] = useState<BuilderStepId | null>(null);
+  const [selectionHintAttempt, setSelectionHintAttempt] = useState(0);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState<CakeOrder | null>(null);
 
@@ -137,13 +145,36 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const goNext = useCallback(() => {
-    const index = BUILDER_STEPS.findIndex((step) => step.id === currentStepId);
-    const next = BUILDER_STEPS[index + 1];
-    if (!next || !canContinueFromStep(currentStepId, configuration)) {
+    if (isOrderFormOpen) {
       return;
     }
+
+    if (!canContinueFromStep(currentStepId, configuration)) {
+      setHintStepId(currentStepId);
+      setSelectionHintAttempt((count) => count + 1);
+      return;
+    }
+
+    const index = BUILDER_STEPS.findIndex((step) => step.id === currentStepId);
+    const next = BUILDER_STEPS[index + 1];
+
+    if (!next) {
+      // Continuing from the last step opens checkout. This runs only from the
+      // click handler (never from an effect), and setting the flag is
+      // idempotent, so re-renders cannot open the modal twice.
+      if (isCompleteCakeConfiguration(configuration)) {
+        setIsOrderFormOpen(true);
+      }
+      return;
+    }
+
+    setHintStepId(null);
     setCurrentStepId(next.id);
-  }, [configuration, currentStepId]);
+  }, [configuration, currentStepId, isOrderFormOpen]);
+
+  const completeIntro = useCallback(() => {
+    setCurrentStepId((current) => (current === "intro" ? "size" : current));
+  }, []);
 
   const goBack = useCallback(() => {
     if (isOrderFormOpen && !submittedOrder) {
@@ -163,14 +194,14 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
           return {
             ...current,
             sponge: null,
-            filling: null,
+            filling: DEFAULT_CAKE_FILLING,
             coverage: null,
             toppings: [],
           };
         case "filling":
           return {
             ...current,
-            filling: null,
+            filling: DEFAULT_CAKE_FILLING,
             coverage: null,
             toppings: [],
           };
@@ -182,15 +213,9 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
           return current;
       }
     });
+    setHintStepId(null);
     setCurrentStepId(previous.id);
   }, [currentStepId, isOrderFormOpen, submittedOrder]);
-
-  const openOrderForm = useCallback(() => {
-    if (!isCompleteCakeConfiguration(configuration)) {
-      return;
-    }
-    setIsOrderFormOpen(true);
-  }, [configuration]);
 
   const closeOrderForm = useCallback(() => {
     if (submittedOrder) {
@@ -201,26 +226,35 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
 
   const submitOrder = useCallback(
     (input: Omit<CreateCakeOrderInput, "cake">) => {
-      if (!isCompleteCakeConfiguration(configuration)) {
-        return null;
+      if (submittedOrder || !isCompleteCakeConfiguration(configuration)) {
+        return false;
       }
 
       const order = createCakeOrder({
         cake: configuration,
         ...input,
       });
+
+      // Only report success once the order reached Hornero's WhatsApp.
+      if (!openHorneroWhatsApp(order)) {
+        return false;
+      }
+
       setSubmittedOrder(order);
-      return order;
+      return true;
     },
-    [configuration],
+    [configuration, submittedOrder],
   );
 
   const resetBuilder = useCallback(() => {
     setConfiguration(EMPTY_CAKE_CONFIGURATION);
     setCurrentStepId("intro");
+    setHintStepId(null);
     setIsOrderFormOpen(false);
     setSubmittedOrder(null);
   }, []);
+
+  const canContinue = canContinueFromStep(currentStepId, configuration);
 
   const value = useMemo<CakeBuilderContextValue>(
     () => ({
@@ -231,7 +265,10 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
       currentStepId,
       builderStepNumber,
       builderStepCount: PROGRESS_STEP_COUNT,
-      canContinue: canContinueFromStep(currentStepId, configuration),
+      canContinue,
+      // Derived from existing validation: hides as soon as a choice is made.
+      showSelectionHint: hintStepId === currentStepId && !canContinue,
+      selectionHintAttempt,
       isOrderFormOpen,
       submittedOrder,
       setSize,
@@ -241,7 +278,7 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
       toggleTopping,
       goNext,
       goBack,
-      openOrderForm,
+      completeIntro,
       closeOrderForm,
       submitOrder,
       resetBuilder,
@@ -249,16 +286,19 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
     [
       builderStepNumber,
       cakeVisual,
+      canContinue,
       closeOrderForm,
+      completeIntro,
       configuration,
       currentStep,
       currentStepId,
       goBack,
       goNext,
+      hintStepId,
       isOrderFormOpen,
-      openOrderForm,
       price,
       resetBuilder,
+      selectionHintAttempt,
       setCoverage,
       setFilling,
       setSize,

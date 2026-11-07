@@ -5,7 +5,6 @@ export const BUILDER_STEP_IDS = [
   "filling",
   "coverage",
   "toppings",
-  "preview",
 ] as const;
 
 export type BuilderStepId = (typeof BUILDER_STEP_IDS)[number];
@@ -65,14 +64,6 @@ export const BUILDER_STEPS: readonly BuilderStep[] = [
     heading: "Toppings",
     question: "¿Qué le ponemos encima?",
     support: "Termínala con tus favoritos.",
-    countsTowardProgress: true,
-  },
-  {
-    id: "preview",
-    title: "Tu torta",
-    heading: "Tu torta",
-    question: "Tu torta está lista",
-    support: "Ahora solo falta elegir cuándo disfrutarla.",
     countsTowardProgress: true,
   },
 ] as const;

@@ -22,17 +22,14 @@ export function BackPill() {
 }
 
 export function NextPill() {
-  const { canContinue, currentStepId, goNext } = useCakeBuilder();
-
-  if (currentStepId === "preview") {
-    return null;
-  }
+  const { canContinue, goNext } = useCakeBuilder();
 
   return (
     <button
       type="button"
       onClick={goNext}
-      disabled={!canContinue}
+      // aria-disabled (not disabled) so a blocked tap can show guidance.
+      aria-disabled={!canContinue}
       className="builder-pill builder-pill-next"
       aria-label="Continuar"
     >

@@ -10,6 +10,8 @@ import type {
  * Temporary development prices in COP.
  * Replace these values when production pricing is confirmed.
  * UI components must read prices only through `calculateCakePrice`.
+ * A `null` surcharge means the price is not configured yet: it is counted
+ * as 0 and the order is flagged as "precio por confirmar".
  */
 export const pricingConfig = {
   currency: "COP",
@@ -23,12 +25,15 @@ export const pricingConfig = {
     fluffy: 0,
   } satisfies Record<CakeSpongeId, number>,
   fillingSurcharge: {
+    none: 0,
     strawberry: 0,
     blackberry: 0,
     "passion-fruit": 3_000,
     peach: 3_000,
     uchuva: 4_000,
-  } satisfies Record<CakeFillingId, number>,
+    // TODO: set the confirmed Tres leches price.
+    "tres-leches": null,
+  } satisfies Record<CakeFillingId, number | null>,
   coverageSurcharge: {
     chantilly: 0,
     cheese: 5_000,

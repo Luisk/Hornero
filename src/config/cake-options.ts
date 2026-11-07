@@ -77,6 +77,15 @@ export const CAKE_SPONGES: readonly CakeOption<CakeSpongeId>[] = [
 
 export const CAKE_FILLINGS: readonly CakeOption<CakeFillingId>[] = [
   {
+    id: "none",
+    label: "Sin relleno",
+    // No artwork: "Sin relleno" renders as a plain color chip.
+    visual: {
+      imageSrc: "",
+      placeholderColor: "#F4EFE6",
+    },
+  },
+  {
     id: "strawberry",
     label: "Fresa",
     visual: {
@@ -114,6 +123,16 @@ export const CAKE_FILLINGS: readonly CakeOption<CakeFillingId>[] = [
     visual: {
       imageSrc: "/images/crea-tu-torta/fillings/cake-uchuva.png",
       placeholderColor: "#E8C44A",
+    },
+  },
+  {
+    id: "tres-leches",
+    label: "Tres leches",
+    // No dedicated artwork yet: renders as a milky color chip, and the
+    // preview reuses the sponge photo with a soaked finish.
+    visual: {
+      imageSrc: "",
+      placeholderColor: "#F1E4CC",
     },
   },
 ] as const;

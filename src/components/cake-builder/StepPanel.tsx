@@ -3,10 +3,10 @@
 import { BackPill, NextPill } from "@/components/cake-builder/BuilderAction";
 import { BuilderProgress } from "@/components/cake-builder/BuilderProgress";
 import { useCakeBuilder } from "@/components/cake-builder/CakeBuilderContext";
+import { SelectionHint } from "@/components/cake-builder/SelectionHint";
 import { SizeSection } from "@/components/cake-builder/size/SizeSection";
 import { CoverageStep } from "@/components/cake-builder/steps/CoverageStep";
 import { FillingStep } from "@/components/cake-builder/steps/FillingStep";
-import { PreviewStep } from "@/components/cake-builder/steps/PreviewStep";
 import { SpongeStep } from "@/components/cake-builder/steps/SpongeStep";
 import { ToppingsStep } from "@/components/cake-builder/steps/ToppingsStep";
 
@@ -31,12 +31,12 @@ export function StepPanel() {
         <NextPill />
       </nav>
       <div className="cake-configurator-choices">
+        <SelectionHint />
         {currentStepId === "size" ? <SizeSection /> : null}
         {currentStepId === "sponge" ? <SpongeStep /> : null}
         {currentStepId === "filling" ? <FillingStep /> : null}
         {currentStepId === "coverage" ? <CoverageStep /> : null}
         {currentStepId === "toppings" ? <ToppingsStep /> : null}
-        {currentStepId === "preview" ? <PreviewStep /> : null}
       </div>
     </section>
   );

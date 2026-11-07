@@ -1,5 +1,8 @@
 import Image from "next/image";
-import { INTRO_CAKE_LAYERS } from "@/config/cake-visuals";
+import {
+  INTRO_CAKE_LAYERS,
+  INTRO_LAYER_DURATION_MS,
+} from "@/config/cake-visuals";
 
 export function IntroCakePieces() {
   return (
@@ -8,10 +11,12 @@ export function IntroCakePieces() {
         <div
           key={layer.id}
           className="intro-cake-layer"
+          data-intro-layer={layer.id}
           style={{
             bottom: layer.bottom,
             height: layer.height,
             animationDelay: `${layer.delayMs}ms`,
+            animationDuration: `${INTRO_LAYER_DURATION_MS}ms`,
           }}
         >
           <Image

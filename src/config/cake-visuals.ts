@@ -2,6 +2,12 @@ export const CAKE_STAGE_IMAGE = "/images/crea-tu-torta/stage/cake-stage.png";
 
 export const INTRO_CAKE_ASSET = "/images/crea-tu-torta/stage/cake-exploded.png";
 
+/** Duration of each intro layer's entrance (`intro-layer-in`). */
+export const INTRO_LAYER_DURATION_MS = 700;
+
+/** Fade from the intro into the configurator (`intro-leave`). */
+export const INTRO_LEAVE_DURATION_MS = 450;
+
 export const INTRO_CAKE_LAYERS = [
   {
     id: "base",
@@ -39,6 +45,11 @@ export const INTRO_CAKE_LAYERS = [
     delayMs: 1040,
   },
 ] as const;
+
+/** When the last intro layer finishes animating. */
+export const INTRO_TIMELINE_MS =
+  Math.max(...INTRO_CAKE_LAYERS.map((layer) => layer.delayMs)) +
+  INTRO_LAYER_DURATION_MS;
 
 export const CAKE_VISUAL_IMAGES = {
   exploded: "/images/crea-tu-torta/stage/cake-exploded.png",

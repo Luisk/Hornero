@@ -3,11 +3,13 @@ export type CakeSizeId = "half-pound" | "one-pound";
 export type CakeSpongeId = "cold" | "fluffy";
 
 export type CakeFillingId =
+  | "none"
   | "strawberry"
   | "blackberry"
   | "passion-fruit"
   | "peach"
-  | "uchuva";
+  | "uchuva"
+  | "tres-leches";
 
 export type CakeCoverageId = "chantilly" | "cheese" | "butter" | "chocolate";
 
@@ -27,7 +29,7 @@ export type CakeToppingId =
 export type CakeConfiguration = {
   size: CakeSizeId | null;
   sponge: CakeSpongeId | null;
-  filling: CakeFillingId | null;
+  filling: CakeFillingId;
   coverage: CakeCoverageId | null;
   toppings: CakeToppingId[];
 };
@@ -40,10 +42,17 @@ export type CompletedCakeConfiguration = {
   toppings: CakeToppingId[];
 };
 
+/** 1 libra is preselected so the builder opens with a cake and a price. */
+export const DEFAULT_CAKE_SIZE: CakeSizeId = "one-pound";
+
+/** "Sin relleno" is the default so the filling step is never blocking. */
+export const DEFAULT_CAKE_FILLING: CakeFillingId = "none";
+
+/** Starting configuration (also used by "Crear otra torta"). */
 export const EMPTY_CAKE_CONFIGURATION: CakeConfiguration = {
-  size: null,
+  size: DEFAULT_CAKE_SIZE,
   sponge: null,
-  filling: null,
+  filling: DEFAULT_CAKE_FILLING,
   coverage: null,
   toppings: [],
 };
@@ -56,7 +65,6 @@ export function isCompleteCakeConfiguration(
   return (
     configuration.size !== null &&
     configuration.sponge !== null &&
-    configuration.filling !== null &&
     configuration.coverage !== null
   );
 }

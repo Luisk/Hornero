@@ -9,6 +9,8 @@ import type { CakeConfiguration, CakeSpongeId } from "@/types/cake";
 export type CakeVisual = {
   id: string;
   image: string | null;
+  /** "soaked" tints the sponge photo to read as milk-soaked (Tres leches). */
+  finish: "soaked" | null;
   toppingImages: string[];
 };
 
@@ -27,6 +29,7 @@ export function getCakeVisual(configuration: CakeConfiguration): CakeVisual {
     return {
       id: "empty",
       image: null,
+      finish: null,
       toppingImages: [],
     };
   }
@@ -80,9 +83,17 @@ export function getCakeVisual(configuration: CakeConfiguration): CakeVisual {
       : [],
   );
 
+  // Tres leches soaks the sponge instead of adding a fruit layer, so it
+  // reuses the sponge photo. A coverage photo hides the interior.
+  const finish =
+    configuration.filling === "tres-leches" && !coverageImage
+      ? "soaked"
+      : null;
+
   return {
     id: idParts.join("-"),
     image,
+    finish,
     toppingImages,
   };
 }

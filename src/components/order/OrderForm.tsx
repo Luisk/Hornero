@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import Image from "next/image";
 import { OrderSummary } from "@/components/order/OrderSummary";
 import { useCakeBuilder } from "@/components/cake-builder/CakeBuilderContext";
-import { ORDER_OCCASIONS } from "@/config/order-options";
-import { openHorneroWhatsApp } from "@/lib/communications";
+import {
+  ORDER_OCCASIONS,
+  REFERENCE_IMAGE_MAX_BYTES,
+  REFERENCE_IMAGE_TYPES,
+} from "@/config/order-options";
 import { ChevronLeftIcon } from "@/components/ui/ChevronLeftIcon";
 import type { OrderOccasionId } from "@/types/order";
 
@@ -17,6 +28,13 @@ function localToday() {
   const day = String(now.getDate()).padStart(2, "0");
   return `${now.getFullYear()}-${month}-${day}`;
 }
+
+type ReferenceImage = { file: File; url: string };
+
+const REFERENCE_IMAGE_MAX_MB = REFERENCE_IMAGE_MAX_BYTES / (1024 * 1024);
+
+const SECONDARY_BUTTON_CLASS =
+  "inline-flex min-h-11 items-center justify-center rounded-[8px] border border-chocolate/20 px-4 text-xs font-medium tracking-[0.12em] text-chocolate uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta";
 
 function StepDots({ step }: { step: 1 | 2 }) {
   return (
@@ -42,6 +60,8 @@ function StepDots({ step }: { step: 1 | 2 }) {
 export function OrderForm() {
   const { configuration, price, submitOrder } = useCakeBuilder();
   const formId = useId();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -53,11 +73,61 @@ export function OrderForm() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [occasion, setOccasion] = useState("");
+  const [notes, setNotes] = useState("");
+  const [reference, setReference] = useState<ReferenceImage | null>(null);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+
+  // Keeps the latest preview URL reachable from the unmount cleanup.
+  const referenceUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     headingRef.current?.focus();
   }, [step]);
+
+  useEffect(() => {
+    return () => {
+      if (referenceUrlRef.current) {
+        URL.revokeObjectURL(referenceUrlRef.current);
+      }
+    };
+  }, []);
+
+  function replaceReference(next: ReferenceImage | null) {
+    if (referenceUrlRef.current) {
+      URL.revokeObjectURL(referenceUrlRef.current);
+    }
+    referenceUrlRef.current = next?.url ?? null;
+    setReference(next);
+  }
+
+  function handleReferenceChange(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.target;
+    const file = input.files?.[0];
+    // Allow picking the same file again after removing it.
+    input.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!(REFERENCE_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+      setReferenceError("Usa una imagen JPG, PNG o WebP.");
+      return;
+    }
+
+    if (file.size > REFERENCE_IMAGE_MAX_BYTES) {
+      setReferenceError(
+        `La imagen supera los ${REFERENCE_IMAGE_MAX_MB} MB. Elige una más liviana.`,
+      );
+      return;
+    }
+
+    setReferenceError(null);
+    replaceReference({ file, url: URL.createObjectURL(file) });
+  }
 
   function goToDelivery() {
     const nextErrors: { name?: string; phone?: string } = {};
@@ -97,19 +167,26 @@ export function OrderForm() {
       return;
     }
 
-    if (!date || date < localToday() || !time || !occasion) {
+    // Delivery fields are optional; a date is only checked when provided.
+    if (date && date < localToday()) {
+      setDateError("Elige una fecha desde hoy.");
+      dateRef.current?.focus();
       return;
     }
 
-    const order = submitOrder({
-      occasion: occasion as OrderOccasionId,
-      delivery: { date, time },
+    const delivered = submitOrder({
+      occasion: occasion ? (occasion as OrderOccasionId) : null,
+      delivery: { date: date || null, time: time || null },
       customer: { name: name.trim(), email: "", phone: phone.trim() },
+      notes,
+      referenceImage: reference?.file ?? null,
     });
 
-    if (order) {
-      openHorneroWhatsApp(order);
-    }
+    setSubmitError(
+      delivered
+        ? null
+        : "No pudimos abrir WhatsApp para enviar tu pedido. Permite las ventanas emergentes e inténtalo de nuevo.",
+    );
   }
 
   return (
@@ -217,6 +294,106 @@ export function OrderForm() {
               </div>
             </div>
 
+            <div className="flex flex-col gap-3">
+              <div>
+                <p
+                  id={`${formId}-reference-label`}
+                  className="mb-1 block text-sm text-chocolate/70"
+                >
+                  Imagen de referencia{" "}
+                  <span className="text-chocolate/50">(opcional)</span>
+                </p>
+                <input
+                  ref={fileInputRef}
+                  id={`${formId}-reference`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleReferenceChange}
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-labelledby={`${formId}-reference-label`}
+                />
+                {reference ? (
+                  <div className="flex items-center gap-3 rounded-[8px] border border-chocolate/15 bg-white p-2">
+                    <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[6px] bg-chocolate/5">
+                      <Image
+                        src={reference.url}
+                        alt="Vista previa de tu imagen de referencia"
+                        fill
+                        unoptimized
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-chocolate">
+                      {reference.file.name}
+                    </span>
+                    <span className="flex shrink-0 flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className={SECONDARY_BUTTON_CLASS}
+                      >
+                        Cambiar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          replaceReference(null);
+                          setReferenceError(null);
+                        }}
+                        className={SECONDARY_BUTTON_CLASS}
+                      >
+                        Quitar
+                      </button>
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex min-h-12 w-full items-center justify-center rounded-[8px] border border-dashed border-chocolate/30 bg-white/60 px-3 text-sm text-chocolate focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta"
+                  >
+                    Subir imagen de referencia
+                  </button>
+                )}
+                <p
+                  className={`mt-1 text-xs ${
+                    referenceError ? "text-terracotta" : "text-chocolate/55"
+                  }`}
+                  role={referenceError ? "alert" : undefined}
+                >
+                  {referenceError ??
+                    `JPG, PNG o WebP · máximo ${REFERENCE_IMAGE_MAX_MB} MB`}
+                </p>
+                {reference ? (
+                  <p className="mt-1 text-xs text-chocolate/55">
+                    Tu pedido quedará marcado para revisión del equipo Hornero.
+                  </p>
+                ) : null}
+              </div>
+
+              <div>
+                <label
+                  htmlFor={`${formId}-notes`}
+                  className="mb-1 block text-sm text-chocolate/70"
+                >
+                  ¿Algún detalle que debamos tener en cuenta?{" "}
+                  <span className="text-chocolate/50">(opcional)</span>
+                </label>
+                <textarea
+                  id={`${formId}-notes`}
+                  name="notes"
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Colores, decoración, mensaje en la torta…"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  className={`${FIELD_CLASS} min-h-20 resize-none border-chocolate/15 py-2`}
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
               className="flex min-h-12 w-full items-center justify-center rounded-[8px] bg-terracotta px-5 text-sm font-medium tracking-[0.16em] text-cream-light uppercase transition-colors duration-200 hover:bg-terracotta/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-chocolate motion-reduce:transition-none"
@@ -235,24 +412,47 @@ export function OrderForm() {
               ¿Cuándo quieres recibirla?
             </h2>
 
+            <p className="text-sm text-chocolate/60">
+              Estos datos son opcionales. Si no los tienes, los coordinamos
+              contigo.
+            </p>
+
             <div className="flex flex-col gap-3">
               <div>
                 <label
                   htmlFor={`${formId}-date`}
                   className="mb-1 block text-sm text-chocolate/70"
                 >
-                  Fecha de entrega
+                  Fecha de entrega{" "}
+                  <span className="text-chocolate/50">(opcional)</span>
                 </label>
                 <input
+                  ref={dateRef}
                   id={`${formId}-date`}
                   name="date"
                   type="date"
-                  required
                   min={localToday()}
                   value={date}
-                  onChange={(event) => setDate(event.target.value)}
-                  className={`${FIELD_CLASS} border-chocolate/15`}
+                  onChange={(event) => {
+                    setDate(event.target.value);
+                    setDateError(null);
+                  }}
+                  aria-invalid={dateError ? true : undefined}
+                  aria-describedby={
+                    dateError ? `${formId}-date-error` : undefined
+                  }
+                  className={`${FIELD_CLASS} ${
+                    dateError ? "border-terracotta" : "border-chocolate/15"
+                  }`}
                 />
+                {dateError ? (
+                  <p
+                    id={`${formId}-date-error`}
+                    className="mt-1 text-sm text-terracotta"
+                  >
+                    {dateError}
+                  </p>
+                ) : null}
               </div>
 
               <div>
@@ -260,13 +460,13 @@ export function OrderForm() {
                   htmlFor={`${formId}-time`}
                   className="mb-1 block text-sm text-chocolate/70"
                 >
-                  Hora de entrega
+                  Hora de entrega{" "}
+                  <span className="text-chocolate/50">(opcional)</span>
                 </label>
                 <input
                   id={`${formId}-time`}
                   name="time"
                   type="time"
-                  required
                   value={time}
                   onChange={(event) => setTime(event.target.value)}
                   className={`${FIELD_CLASS} border-chocolate/15`}
@@ -278,19 +478,16 @@ export function OrderForm() {
                   htmlFor={`${formId}-occasion`}
                   className="mb-1 block text-sm text-chocolate/70"
                 >
-                  Ocasión
+                  Ocasión <span className="text-chocolate/50">(opcional)</span>
                 </label>
                 <select
                   id={`${formId}-occasion`}
                   name="occasion"
-                  required
                   value={occasion}
                   onChange={(event) => setOccasion(event.target.value)}
                   className={`${FIELD_CLASS} border-chocolate/15`}
                 >
-                  <option value="" disabled>
-                    Selecciona una ocasión
-                  </option>
+                  <option value="">Selecciona una ocasión</option>
                   {ORDER_OCCASIONS.map((option) => (
                     <option key={option.id} value={option.id}>
                       {option.label}
@@ -299,6 +496,12 @@ export function OrderForm() {
                 </select>
               </div>
             </div>
+
+            {submitError ? (
+              <p className="text-sm text-terracotta" role="alert">
+                {submitError}
+              </p>
+            ) : null}
 
             <div className="flex flex-col gap-3">
               <button

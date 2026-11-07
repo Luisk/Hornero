@@ -1,4 +1,8 @@
-import { PROGRESS_STEPS, type BuilderStepId } from "@/config/builder-steps";
+import {
+  BUILDER_STEP_IDS,
+  PROGRESS_STEPS,
+  type BuilderStepId,
+} from "@/config/builder-steps";
 import {
   getCoverageOption,
   getFillingOption,
@@ -25,7 +29,9 @@ export function getSelectionHistory(
   configuration: CakeConfiguration,
   currentStepId: BuilderStepId,
 ): SelectionHistoryItem[] {
-  return PROGRESS_STEPS.filter((step) => step.id !== "preview").map((step) => {
+  const stepIndex = (id: BuilderStepId) => BUILDER_STEP_IDS.indexOf(id);
+
+  return PROGRESS_STEPS.map((step) => {
     const isCurrent = step.id === currentStepId;
 
     if (step.id === "size" && configuration.size) {
@@ -50,7 +56,13 @@ export function getSelectionHistory(
       };
     }
 
-    if (step.id === "filling" && configuration.filling) {
+    // "Sin relleno" is preselected, so it only counts as a choice once the
+    // customer has moved past the filling step.
+    const fillingChosen =
+      configuration.filling !== "none" ||
+      stepIndex(currentStepId) > stepIndex("filling");
+
+    if (step.id === "filling" && fillingChosen) {
       const option = getFillingOption(configuration.filling);
       return {
         id: step.id,

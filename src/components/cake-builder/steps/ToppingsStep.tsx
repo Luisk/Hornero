@@ -16,7 +16,7 @@ export function ToppingsStep() {
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="font-script px-4 text-center text-[1.25rem] leading-tight text-chocolate/75">
-        Selecciona hasta dos opciones
+        Opcional: elige hasta dos, o ninguna
       </p>
       <OptionsCarousel label="Toppings" align="start" selectionMode="multiple">
         {TOPPING_CATEGORIES.flatMap((category) =>

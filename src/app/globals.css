@@ -50,15 +50,35 @@ html {
   overflow: hidden;
 }
 
-.cake-intro {
+/*
+ * Persistent scene: the stage background is mounted once here and stays
+ * visible while the intro and configurator foregrounds swap on top of it.
+ */
+.cake-scene {
   position: relative;
+  height: 100dvh;
+  max-width: 100%;
+  overflow: hidden;
+  background: var(--color-cream);
+}
+
+.cake-scene-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Foreground only: transparent so the shared background shows through. */
+.cake-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   height: 100dvh;
   min-height: 100dvh;
   max-width: 100%;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-cream);
 }
 
 .cake-intro-stage {
@@ -71,12 +91,24 @@ html {
   bottom: 20%;
 }
 
+/*
+ * Each layer box is a share of the stack's height, and its image is drawn
+ * with object-fit: contain. If the stack gets too wide for its height, the
+ * tallest piece (top: 42% box, 908x502 image) runs out of height and is drawn
+ * narrower than the rest. Capping the width at height x 0.42 x 908/502 keeps
+ * every piece at full stack width. Phones never reach this cap.
+ */
 .intro-cake-stack {
+  --intro-stack-height: 56dvh; /* 56% of the 100dvh intro */
   position: absolute;
   left: 50%;
   bottom: 18%;
   z-index: 2;
-  width: min(62%, 24rem);
+  width: min(
+    62%,
+    24rem,
+    calc(var(--intro-stack-height) * 0.42 * 908 / 502)
+  );
   height: 56%;
   transform: translateX(-50%);
 }
@@ -97,16 +129,10 @@ html {
   text-align: center;
 }
 
-.cake-intro-action {
-  position: relative;
-  z-index: 2;
-  margin-top: auto;
-  padding: 0 1.5rem max(1.5rem, env(safe-area-inset-bottom));
-  text-align: center;
-}
-
-.cake-intro-cta {
-  animation: intro-cta-in 380ms ease 1.45s both;
+/* Intro hands off to the configurator automatically. */
+.cake-intro.is-leaving {
+  animation: intro-leave 450ms ease forwards;
+  pointer-events: none;
 }
 
 @keyframes intro-layer-in {
@@ -122,32 +148,50 @@ html {
   }
 }
 
-@keyframes intro-cta-in {
+@keyframes intro-leave {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Foreground-only crossfade; the background underneath never fades. */
+.cake-configurator {
+  animation: configurator-in 450ms ease both;
+}
+
+@keyframes configurator-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
 @media (min-height: 900px) {
   .intro-cake-stack {
+    --intro-stack-height: 60dvh;
     height: 60%;
-    width: min(54%, 28rem);
+    width: min(
+      54%,
+      28rem,
+      calc(var(--intro-stack-height) * 0.42 * 908 / 502)
+    );
   }
 }
 
 .cake-configurator {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   display: flex;
   height: 100dvh;
   max-width: 100%;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-cream);
 }
 
 .cake-configurator-chrome {
@@ -184,19 +228,66 @@ html {
 }
 
 .cake-configurator-choices {
+  position: relative;
   min-width: 0;
   margin-top: auto;
   padding: 0 0 max(0.85rem, env(safe-area-inset-bottom));
   pointer-events: auto;
 }
 
-.preview-order-cta {
+/* Guidance bubble sitting just above the options, arrow pointing down. */
+.selection-hint-anchor {
   position: absolute;
+  bottom: calc(100% + 0.75rem);
   left: 50%;
-  top: calc(78% + 50px);
-  z-index: 12;
+  z-index: 13;
   transform: translateX(-50%);
-  pointer-events: auto;
+  pointer-events: none;
+}
+
+.selection-hint {
+  position: relative;
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgb(229 216 201 / 0.9);
+  border-radius: 999px;
+  background: var(--color-cream-light);
+  box-shadow: 0 4px 14px rgb(62 36 26 / 0.12);
+  color: var(--color-chocolate);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  animation: selection-hint-in 260ms ease both;
+}
+
+.selection-hint::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-top: -0.35rem;
+  border-right: 1px solid rgb(229 216 201 / 0.9);
+  border-bottom: 1px solid rgb(229 216 201 / 0.9);
+  background: var(--color-cream-light);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+@keyframes selection-hint-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .options-carousel {
@@ -262,7 +353,8 @@ html {
   color: var(--color-cream-light);
 }
 
-.builder-pill-next:disabled {
+.builder-pill-next:disabled,
+.builder-pill-next[aria-disabled="true"] {
   cursor: not-allowed;
   background: rgb(229 216 201 / 0.85);
   color: rgb(62 36 26 / 0.35);
@@ -588,7 +680,13 @@ html {
 .cake-crossfade {
   transition:
     opacity 600ms ease,
-    transform 600ms ease;
+    transform 600ms ease,
+    filter 600ms ease;
+}
+
+/* Tres leches: warm, milky, moist look on the existing sponge photo. */
+.cake-layer-slot.is-soaked .cake-crossfade {
+  filter: sepia(0.18) saturate(1.15) brightness(1.03) contrast(1.04);
 }
 
 .font-script {

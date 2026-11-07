@@ -18,9 +18,10 @@ export function CakePreview() {
   const sponge = configuration.sponge
     ? getSpongeOption(configuration.sponge)
     : undefined;
-  const filling = configuration.filling
-    ? getFillingOption(configuration.filling)
-    : undefined;
+  const filling =
+    configuration.filling === "none" || configuration.filling === "tres-leches"
+      ? undefined
+      : getFillingOption(configuration.filling);
   const coverage = configuration.coverage
     ? getCoverageOption(configuration.coverage)
     : undefined;

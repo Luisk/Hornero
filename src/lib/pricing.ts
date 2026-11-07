@@ -12,9 +12,7 @@ export function calculateCakePrice(configuration: CakeConfiguration): number {
     total += pricingConfig.spongeSurcharge[configuration.sponge];
   }
 
-  if (configuration.filling) {
-    total += pricingConfig.fillingSurcharge[configuration.filling];
-  }
+  total += pricingConfig.fillingSurcharge[configuration.filling] ?? 0;
 
   if (configuration.coverage) {
     total += pricingConfig.coverageSurcharge[configuration.coverage];
@@ -25,6 +23,11 @@ export function calculateCakePrice(configuration: CakeConfiguration): number {
   }
 
   return total;
+}
+
+/** True when a selection has no configured price yet (counted as 0). */
+export function hasUnconfiguredPrice(configuration: CakeConfiguration) {
+  return pricingConfig.fillingSurcharge[configuration.filling] === null;
 }
 
 export function formatCakePrice(amount: number): string {

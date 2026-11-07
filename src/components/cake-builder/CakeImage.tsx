@@ -3,13 +3,24 @@
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 
+/** Exact URL CakeImage requests (preloading must use the same cache key). */
+export function cakeImageSrc(image: string) {
+  return `${image}?v=7`;
+}
+
 type CakeImageProps = {
   image: string;
   compact?: boolean;
+  soaked?: boolean;
   children?: ReactNode;
 };
 
-export function CakeImage({ image, compact = false, children }: CakeImageProps) {
+export function CakeImage({
+  image,
+  compact = false,
+  soaked = false,
+  children,
+}: CakeImageProps) {
   const [displayed, setDisplayed] = useState(image);
   const [incoming, setIncoming] = useState<string | null>(null);
 
@@ -31,9 +42,13 @@ export function CakeImage({ image, compact = false, children }: CakeImageProps) 
   }, [incoming]);
 
   return (
-    <div className={`cake-layer-slot${compact ? " is-exploded" : ""}`}>
+    <div
+      className={`cake-layer-slot${compact ? " is-exploded" : ""}${
+        soaked ? " is-soaked" : ""
+      }`}
+    >
       <Image
-        src={`${displayed}?v=7`}
+        src={cakeImageSrc(displayed)}
         alt="Vista de tu torta"
         fill
         priority
@@ -45,7 +60,7 @@ export function CakeImage({ image, compact = false, children }: CakeImageProps) 
       />
       {incoming ? (
         <Image
-          src={`${incoming}?v=7`}
+          src={cakeImageSrc(incoming)}
           alt=""
           fill
           unoptimized

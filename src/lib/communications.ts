@@ -5,7 +5,12 @@ import {
   getSpongeOption,
   getToppingOption,
 } from "@/config/cake-options";
-import { getOccasionLabel } from "@/config/order-options";
+import {
+  PRICE_PENDING_LABEL,
+  REVIEW_REQUIRED_LABEL,
+  UNSPECIFIED_LABEL,
+  getOccasionLabel,
+} from "@/config/order-options";
 import { formatCakePrice } from "@/lib/pricing";
 import type {
   CakeOrder,
@@ -44,6 +49,29 @@ function toppingLabels(order: CakeOrder) {
 }
 
 export function formatWhatsAppOrderMessage(order: CakeOrder) {
+  const extras: string[] = [];
+
+  if (order.notes) {
+    extras.push("", "Detalles adicionales:", order.notes);
+  }
+
+  if (order.referenceImage) {
+    // wa.me links cannot carry files, so the customer sends the photo in chat.
+    extras.push(
+      "",
+      "Imagen de referencia:",
+      `Sí (${order.referenceImage.name}). El cliente la enviará por este chat.`,
+    );
+  }
+
+  if (order.cake.pricePending) {
+    extras.push("", `⚠ ${PRICE_PENDING_LABEL}`);
+  }
+
+  if (order.requiresReview) {
+    extras.push("", `⚠ ${REVIEW_REQUIRED_LABEL}`);
+  }
+
   return [
     "Nuevo pedido — Crea tu torta",
     "",
@@ -69,7 +97,7 @@ export function formatWhatsAppOrderMessage(order: CakeOrder) {
     toppingLabels(order),
     "",
     `Fecha de entrega:`,
-    order.delivery.date,
+    order.delivery.date ?? UNSPECIFIED_LABEL,
     "",
     `Hora:`,
     order.delivery.time,
@@ -79,12 +107,14 @@ export function formatWhatsAppOrderMessage(order: CakeOrder) {
     "",
     `Total:`,
     formatCakePrice(order.cake.price),
+    ...extras,
   ].join("\n");
 }
 
-export function openHorneroWhatsApp(order: CakeOrder) {
+/** Returns true when the WhatsApp window was actually opened. */
+export function openHorneroWhatsApp(order: CakeOrder): boolean {
   if (typeof window === "undefined") {
-    return;
+    return false;
   }
 
   const text = encodeURIComponent(formatWhatsAppOrderMessage(order));
@@ -93,5 +123,12 @@ export function openHorneroWhatsApp(order: CakeOrder) {
     ? `https://wa.me/${number}?text=${text}`
     : `https://wa.me/?text=${text}`;
 
-  window.open(url, "_blank", "noopener,noreferrer");
+  // "noopener" in the features string makes window.open return null, which
+  // would hide a blocked popup. Detach the opener manually instead.
+  const opened = window.open(url, "_blank");
+  if (!opened) {
+    return false;
+  }
+  opened.opener = null;
+  return true;
 }
