@@ -16,10 +16,12 @@ import {
   type BuilderStep,
   type BuilderStepId,
 } from "@/config/builder-steps";
+import { getCakeVisual, type CakeVisual } from "@/lib/cake-visuals";
 import { createCakeOrder } from "@/lib/orders";
 import { calculateCakePrice } from "@/lib/pricing";
 import {
   EMPTY_CAKE_CONFIGURATION,
+  MAX_CAKE_TOPPINGS,
   isCompleteCakeConfiguration,
   type CakeConfiguration,
   type CakeCoverageId,
@@ -32,6 +34,7 @@ import type { CakeOrder, CreateCakeOrderInput } from "@/types/order";
 
 type CakeBuilderContextValue = {
   configuration: CakeConfiguration;
+  cakeVisual: CakeVisual;
   price: number;
   currentStep: BuilderStep;
   currentStepId: BuilderStepId;
@@ -89,6 +92,10 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
     () => calculateCakePrice(configuration),
     [configuration],
   );
+  const cakeVisual = useMemo(
+    () => getCakeVisual(configuration),
+    [configuration],
+  );
 
   const currentStep = getBuilderStep(currentStepId);
   const builderStepNumber = getProgressNumber(currentStepId);
@@ -111,12 +118,20 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
 
   const toggleTopping = useCallback((topping: CakeToppingId) => {
     setConfiguration((current) => {
-      const alreadySelected = current.toppings.includes(topping);
+      if (current.toppings.includes(topping)) {
+        return {
+          ...current,
+          toppings: current.toppings.filter((item) => item !== topping),
+        };
+      }
+
+      if (current.toppings.length >= MAX_CAKE_TOPPINGS) {
+        return current;
+      }
+
       return {
         ...current,
-        toppings: alreadySelected
-          ? current.toppings.filter((item) => item !== topping)
-          : [...current.toppings, topping],
+        toppings: [...current.toppings, topping],
       };
     });
   }, []);
@@ -138,9 +153,36 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
 
     const index = BUILDER_STEPS.findIndex((step) => step.id === currentStepId);
     const previous = BUILDER_STEPS[index - 1];
-    if (previous) {
-      setCurrentStepId(previous.id);
+    if (!previous || previous.id === "intro") {
+      return;
     }
+
+    setConfiguration((current) => {
+      switch (currentStepId) {
+        case "sponge":
+          return {
+            ...current,
+            sponge: null,
+            filling: null,
+            coverage: null,
+            toppings: [],
+          };
+        case "filling":
+          return {
+            ...current,
+            filling: null,
+            coverage: null,
+            toppings: [],
+          };
+        case "coverage":
+          return { ...current, coverage: null, toppings: [] };
+        case "toppings":
+          return { ...current, toppings: [] };
+        default:
+          return current;
+      }
+    });
+    setCurrentStepId(previous.id);
   }, [currentStepId, isOrderFormOpen, submittedOrder]);
 
   const openOrderForm = useCallback(() => {
@@ -183,6 +225,7 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CakeBuilderContextValue>(
     () => ({
       configuration,
+      cakeVisual,
       price,
       currentStep,
       currentStepId,
@@ -205,6 +248,7 @@ export function CakeBuilderProvider({ children }: { children: ReactNode }) {
     }),
     [
       builderStepNumber,
+      cakeVisual,
       closeOrderForm,
       configuration,
       currentStep,

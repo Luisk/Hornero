@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Source_Sans_3 } from "next/font/google";
+import { Caveat, Fraunces, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -14,6 +14,12 @@ const sourceSans = Source_Sans_3({
   display: "swap",
 });
 
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Hornero — Crea tu Torta",
   description:
@@ -23,16 +29,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#F4EDE3",
+  themeColor: "#F5EDE2",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${fraunces.variable} ${sourceSans.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${sourceSans.variable} ${caveat.variable} h-full overflow-hidden antialiased`}
     >
-      <body className="min-h-full overflow-x-hidden bg-cream font-sans text-chocolate">
+      <body className="h-full overflow-hidden bg-cream font-sans text-chocolate">
         {children}
       </body>
     </html>

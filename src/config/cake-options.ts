@@ -20,6 +20,9 @@ export type CakeOption<Id extends string> = {
 
 export type CakeSizeOption = CakeOption<CakeSizeId> & {
   scale: number;
+  servings: string;
+  description: string;
+  image: string;
 };
 
 export type CakeToppingOption = CakeOption<CakeToppingId> & {
@@ -29,19 +32,25 @@ export type CakeToppingOption = CakeOption<CakeToppingId> & {
 export const CAKE_SIZES: readonly CakeSizeOption[] = [
   {
     id: "half-pound",
-    label: "½ libra",
-    scale: 0.82,
+    label: "½ LIBRA",
+    servings: "4 – 6 personas",
+    description: "Perfecta para compartir\ncon alguien especial.",
+    image: "/images/crea-tu-torta/size/cake-half-pound.png",
+    scale: 1,
     visual: {
-      imageSrc: "/images/cakes/size-half-pound.jpg",
+      imageSrc: "/images/crea-tu-torta/size/cake-half-pound.png",
       placeholderColor: "#E8D5B5",
     },
   },
   {
     id: "one-pound",
-    label: "1 libra",
+    label: "1 LIBRA",
+    servings: "8 – 12 personas",
+    description: "Ideal para celebrar en\nfamilia o con amigos.",
+    image: "/images/crea-tu-torta/size/cake-one-pound.png",
     scale: 1,
     visual: {
-      imageSrc: "/images/cakes/size-one-pound.jpg",
+      imageSrc: "/images/crea-tu-torta/size/cake-one-pound.png",
       placeholderColor: "#D4B896",
     },
   },
@@ -52,7 +61,7 @@ export const CAKE_SPONGES: readonly CakeOption<CakeSpongeId>[] = [
     id: "cold",
     label: "Frío",
     visual: {
-      imageSrc: "/images/cakes/sponge-cold.jpg",
+      imageSrc: "/images/crea-tu-torta/sponge/cake-cold.png",
       placeholderColor: "#EDE6D9",
     },
   },
@@ -60,7 +69,7 @@ export const CAKE_SPONGES: readonly CakeOption<CakeSpongeId>[] = [
     id: "fluffy",
     label: "Esponjoso",
     visual: {
-      imageSrc: "/images/cakes/sponge-fluffy.jpg",
+      imageSrc: "/images/crea-tu-torta/size/cake-one-pound.png",
       placeholderColor: "#E8C98A",
     },
   },
@@ -71,7 +80,7 @@ export const CAKE_FILLINGS: readonly CakeOption<CakeFillingId>[] = [
     id: "strawberry",
     label: "Fresa",
     visual: {
-      imageSrc: "/images/fillings/fresa.jpg",
+      imageSrc: "/images/crea-tu-torta/fillings/cake-strawberry.png",
       placeholderColor: "#C43B4B",
     },
   },
@@ -79,7 +88,7 @@ export const CAKE_FILLINGS: readonly CakeOption<CakeFillingId>[] = [
     id: "blackberry",
     label: "Mora",
     visual: {
-      imageSrc: "/images/fillings/mora.jpg",
+      imageSrc: "/images/crea-tu-torta/fillings/cake-blackberry.png",
       placeholderColor: "#4A1C3A",
     },
   },
@@ -87,7 +96,7 @@ export const CAKE_FILLINGS: readonly CakeOption<CakeFillingId>[] = [
     id: "passion-fruit",
     label: "Maracuyá",
     visual: {
-      imageSrc: "/images/fillings/maracuya.jpg",
+      imageSrc: "/images/crea-tu-torta/fillings/cake-passion-fruit.png",
       placeholderColor: "#E8A317",
     },
   },
@@ -95,7 +104,7 @@ export const CAKE_FILLINGS: readonly CakeOption<CakeFillingId>[] = [
     id: "peach",
     label: "Durazno",
     visual: {
-      imageSrc: "/images/fillings/durazno.jpg",
+      imageSrc: "/images/crea-tu-torta/fillings/cake-peach.png",
       placeholderColor: "#E8896B",
     },
   },
@@ -103,7 +112,7 @@ export const CAKE_FILLINGS: readonly CakeOption<CakeFillingId>[] = [
     id: "uchuva",
     label: "Uchuva",
     visual: {
-      imageSrc: "/images/fillings/uchuva.jpg",
+      imageSrc: "/images/crea-tu-torta/fillings/cake-uchuva.png",
       placeholderColor: "#E8C44A",
     },
   },
@@ -114,7 +123,7 @@ export const CAKE_COVERAGES: readonly CakeOption<CakeCoverageId>[] = [
     id: "chantilly",
     label: "Chantilly",
     visual: {
-      imageSrc: "/images/ingredients/chantilly.jpg",
+      imageSrc: "/images/crea-tu-torta/coverage/cake-chantilly.png",
       placeholderColor: "#F7F1E8",
     },
   },
@@ -122,7 +131,7 @@ export const CAKE_COVERAGES: readonly CakeOption<CakeCoverageId>[] = [
     id: "cheese",
     label: "Queso",
     visual: {
-      imageSrc: "/images/ingredients/cobertura-queso.jpg",
+      imageSrc: "/images/crea-tu-torta/coverage/cake-cheese.png",
       placeholderColor: "#F3EDE0",
     },
   },
@@ -130,7 +139,7 @@ export const CAKE_COVERAGES: readonly CakeOption<CakeCoverageId>[] = [
     id: "butter",
     label: "Mantequilla",
     visual: {
-      imageSrc: "/images/ingredients/cobertura-mantequilla.jpg",
+      imageSrc: "/images/crea-tu-torta/coverage/cake-butter.png",
       placeholderColor: "#F0D9A0",
     },
   },
@@ -138,7 +147,7 @@ export const CAKE_COVERAGES: readonly CakeOption<CakeCoverageId>[] = [
     id: "chocolate",
     label: "Chocolate",
     visual: {
-      imageSrc: "/images/ingredients/cobertura-chocolate.jpg",
+      imageSrc: "/images/crea-tu-torta/coverage/cake-chocolate.png",
       placeholderColor: "#4A2C1A",
     },
   },
@@ -159,7 +168,7 @@ export const CAKE_TOPPINGS: readonly CakeToppingOption[] = [
     label: "Fresa",
     category: "fruits",
     visual: {
-      imageSrc: "/images/toppings/fresa.jpg",
+      imageSrc: "/images/crea-tu-torta/toppings/topping-strawberry.png",
       placeholderColor: "#C43B4B",
     },
   },

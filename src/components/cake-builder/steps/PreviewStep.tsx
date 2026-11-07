@@ -1,15 +1,19 @@
 "use client";
 
-import { OrderSummary } from "@/components/order/OrderSummary";
 import { useCakeBuilder } from "@/components/cake-builder/CakeBuilderContext";
 
 export function PreviewStep() {
-  const { configuration, price } = useCakeBuilder();
+  const { openOrderForm } = useCakeBuilder();
 
   return (
-    <div className="min-w-0">
-      <h2 className="font-display mb-4 text-2xl text-chocolate">Tu torta</h2>
-      <OrderSummary configuration={configuration} price={price} />
+    <div className="preview-order-cta">
+      <button
+        type="button"
+        onClick={openOrderForm}
+        className="inline-flex min-h-[52px] min-w-44 items-center justify-center rounded-md bg-terracotta px-8 text-sm font-medium tracking-[0.2em] text-cream-light transition-colors duration-200 hover:bg-terracotta/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-chocolate"
+      >
+        PÍDELA AHORA
+      </button>
     </div>
   );
 }

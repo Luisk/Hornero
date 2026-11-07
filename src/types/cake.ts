@@ -48,6 +48,8 @@ export const EMPTY_CAKE_CONFIGURATION: CakeConfiguration = {
   toppings: [],
 };
 
+export const MAX_CAKE_TOPPINGS = 2;
+
 export function isCompleteCakeConfiguration(
   configuration: CakeConfiguration,
 ): configuration is CompletedCakeConfiguration {

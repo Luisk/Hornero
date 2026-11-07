@@ -28,9 +28,9 @@ export function calculateCakePrice(configuration: CakeConfiguration): number {
 }
 
 export function formatCakePrice(amount: number): string {
-  const formatted = new Intl.NumberFormat(pricingConfig.locale, {
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const formatted = Math.round(amount)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
   return `$${formatted}`;
 }

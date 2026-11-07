@@ -3,7 +3,7 @@ import type { CakeOrder, CreateCakeOrderInput } from "@/types/order";
 
 export function generateOrderId(): string {
   const n = Math.floor(1000 + Math.random() * 9000);
-  return `HT-${n}`;
+  return `HO - ${n}`;
 }
 
 export function createCakeOrder(input: CreateCakeOrderInput): CakeOrder {
